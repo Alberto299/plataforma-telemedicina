@@ -1,0 +1,144 @@
+/* --- ESTILOS PRINCIPALES (Tu diseño) --- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.subtitle {
+    color: #666;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+
+/* Ocultar el input default */
+input[type="file"] {
+    display: none;
+}
+
+.file-input-wrapper {
+    margin-bottom: 20px;
+    border: 2px dashed #ccc;
+    padding: 20px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.file-input-wrapper:hover {
+    border-color: #4CAF50;
+    background-color: #f9fff9;
+}
+
+.custom-file-upload {
+    display: inline-block;
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #e9ecef;
+    color: #333;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    transition: background 0.3s;
+}
+
+.custom-file-upload:hover {
+    background-color: #dde0e3;
+}
+
+#file-name {
+    font-size: 0.85rem;
+    color: #555;
+    word-break: break-all;
+}
+
+.btn-upload {
+    width: 100%;
+    padding: 12px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-upload:hover {
+    background-color: #45a049;
+}
+
+/* --- ESTILOS DE LA PANTALLA DE CARGA (Necesarios para el loader) --- */
+#loader-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 1000;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #4CAF50; /* Verde para combinar con tu botón */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-size: 1.2rem;
+    color: #333;
+    font-weight: bold;
+}
+
+/* Nuevo estilo para botón secundario */
+.btn-secondary {
+    display: inline-block;
+    margin-top: 15px;
+    color: #666;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 2px;
+    transition: color 0.3s;
+}
+.btn-secondary:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+}

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Audio</title>
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <style>
+        :root { --primary: #007bff; --primary-dark: #0056b3; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 40px; display: flex; justify-content: center; }
+        
+        .container { 
+            background: white; width: 100%; max-width: 900px; padding: 30px; 
+            border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+        }
+
+        h1 { color: #333; margin-bottom: 5px; }
+        .badge { padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 0.9rem; color: white; }
+        .bg-green { background-color: #28a745; }
+        .bg-red { background-color: #dc3545; }
+
+        /* --- ESTILO DEL REPRODUCTOR --- */
+        #waveform {
+            width: 100%;
+            margin: 30px 0;
+            background: #ffffff;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        /* Slider de Zoom */
+        .zoom-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        input[type=range] { flex-grow: 1; cursor: pointer; }
+
+        .controls { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
+        
+        button {
+            padding: 10px 30px; border: none; border-radius: 50px; 
+            cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn-play { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); }
+        .btn-play:hover { background: var(--primary-dark); transform: scale(1.05); }
+        
+        .btn-back { background: #eee; color: #333; text-decoration: none; display: inline-block; margin-bottom: 20px; padding: 8px 15px; border-radius: 5px; font-size: 0.9rem;}
+        .btn-back:hover { background: #ddd; }
+
+        #loading-wave { text-align: center; color: #666; margin: 20px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="/ver-pacientes" class="btn-back">← Volver al listado</a>
+        
+        <div id="info-header">
+            <h1 id="paciente-nombre">Cargando...</h1>
+            <p>Diagnóstico IA: <span id="diag-badge" class="badge">...</span></p>
+        </div>
+
+        <div id="loading-wave">🌊 Generando gráfica...</div>
+
+        <div id="waveform"></div>
+
+        <div class="zoom-container">
+            <span style="font-size: 0.8rem; font-weight: bold; color: #666;">🔍 Zoom:</span>
+            <input type="range" id="zoom-slider" min="10" max="500" value="10">
+        </div>
+
+        <div class="controls">
+            <button id="playPauseBtn" class="btn-play">▶ Reproducir</button>
+        </div>
+
+        <div style="background: #f1f1f1; padding: 15px; border-radius: 8px; margin-top: 20px;">
+            <h3>Detalles Técnicos</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div><strong>Confianza:</strong> <span id="confianza">...</span>%</div>
+                <div><strong>Latidos analizados:</strong> <span id="ciclos">...</span></div>
+                <div style="grid-column: span 2;"><strong>Fecha:</strong> <span id="fecha">...</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        const loadingMsg = document.getElementById('loading-wave');
+
+        // --- CONFIGURACIÓN TIPO LÍNEA DE WAVESURFER ---
+        const wavesurfer = WaveSurfer.create({
+            container: '#waveform',
+            // Usamos los colores del tema (azul) para la onda y el progreso
+            waveColor: '#007bff',      
+            progressColor: '#0056b3',  
+            // Ocultamos el cursor vertical para un look más limpio
+            cursorWidth: 0,            
+            
+            height: 150,
+            // IMPORTANTE: Al quitar barWidth y barGap, se convierte en una línea continua
+            normalize: true,           
+            responsive: true,
+        });
+
+        loadingMsg.style.display = 'block';
+
+        fetch(`/api/diagnostico/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('paciente-nombre').textContent = data.nombre + ` (${data.edad} años)`;
+                document.getElementById('confianza').textContent = data.confianza;
+                document.getElementById('ciclos').textContent = data.ciclos_detectados;
+                document.getElementById('fecha').textContent = new Date(data.fecha_analisis).toLocaleString();
+
+                const badge = document.getElementById('diag-badge');
+                badge.textContent = data.resultado_ia;
+                badge.classList.add(data.resultado_ia.toLowerCase().includes('normal') ? 'bg-green' : 'bg-red');
+
+                wavesurfer.load(data.url_web);
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                loadingMsg.textContent = "Error cargando audio.";
+            });
+
+        wavesurfer.on('ready', () => { loadingMsg.style.display = 'none'; });
+
+        const slider = document.getElementById('zoom-slider');
+        slider.oninput = function () { wavesurfer.zoom(Number(this.value)); };
+
+        const btn = document.getElementById('playPauseBtn');
+        btn.addEventListener('click', () => { wavesurfer.playPause(); });
+
+        wavesurfer.on('play', () => btn.textContent = '⏸ Pausar');
+        wavesurfer.on('pause', () => btn.textContent = '▶ Reproducir');
+        wavesurfer.on('finish', () => btn.textContent = '↺ Repetir');
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Pacientes</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            padding: 40px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px; /* Un poco más ancho para los botones extra */
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h1 { color: #007bff; text-align: center; margin-bottom: 30px; }
+        
+        /* --- ESTILOS BARRA DE BÚSQUEDA --- */
+        .search-wrapper {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        #buscador {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        #buscador:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        /* Estilos de la Tabla */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover { background-color: #f8f9fa; }
+
+        /* Etiquetas de estado */
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .bg-normal { background-color: #d4edda; color: #155724; }
+        .bg-anomalia { background-color: #f8d7da; color: #721c24; }
+
+        /* Botones de acción */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 5px;
+            transition: background 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-audio { background-color: #007bff; color: white; }
+        .btn-audio:hover { background-color: #0056b3; }
+        
+        .btn-pdf { background-color: #dc3545; color: white; }
+        .btn-pdf:hover { background-color: #a71d2a; }
+
+        /* Botón volver */
+        .btn-back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #555;
+            font-weight: bold;
+        }
+        .btn-back:hover { color: #000; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="/" class="btn-back">← Volver al Inicio</a>
+        <h1>Historial de Diagnósticos</h1>
+
+        <div class="search-wrapper">
+            <input type="text" id="buscador" placeholder="🔍 Buscar por nombre del paciente...">
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Paciente</th>
+                    <th>Edad</th>
+                    <th>Diagnóstico</th>
+                    <th>Confianza</th>
+                    <th style="text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-cuerpo">
+                </tbody>
+        </table>
+        
+        <p id="loading" style="text-align:center; margin-top:20px;">Cargando datos...</p>
+        <p id="no-results" style="text-align:center; margin-top:20px; display:none; color:#666;">No se encontraron pacientes con ese nombre.</p>
+    </div>
+
+    <script>
+        let pacientesData = []; // Guardaremos los datos aquí para filtrar rápido
+
+        // 1. CARGAR DATOS
+        fetch('/api/pacientes')
+            .then(response => response.json())
+            .then(data => {
+                pacientesData = data; // Guardar en variable global
+                renderTable(data);    // Dibujar tabla inicial
+                document.getElementById('loading').style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loading').textContent = "Error al cargar datos.";
+            });
+
+        // 2. FUNCIÓN PARA DIBUJAR TABLA
+        function renderTable(data) {
+            const tbody = document.getElementById('tabla-cuerpo');
+            tbody.innerHTML = ''; // Limpiar tabla
+
+            if (data.length === 0) {
+                document.getElementById('no-results').style.display = 'block';
+                return;
+            } else {
+                document.getElementById('no-results').style.display = 'none';
+            }
+
+            data.forEach(fila => {
+                const tr = document.createElement('tr');
+                const fecha = new Date(fila.fecha_analisis).toLocaleString();
+                const esNormal = fila.resultado_ia.toLowerCase().includes('normal');
+                const claseBadge = esNormal ? 'bg-normal' : 'bg-anomalia';
+                const icono = esNormal ? '💚' : '⚠️';
+
+                // Preparamos los datos para el botón PDF (serializado en atributo data)
+                const datosPDF = encodeURIComponent(JSON.stringify({
+                    nombre: fila.nombre,
+                    edad: fila.edad,
+                    fecha: fecha,
+                    diagnostico: fila.resultado_ia,
+                    confianza: fila.confianza,
+                    id: fila.id
+                }));
+
+                tr.innerHTML = `
+                    <td>${fecha}</td>
+                    <td><strong>${fila.nombre}</strong></td>
+                    <td>${fila.edad}</td>
+                    <td><span class="badge ${claseBadge}">${icono} ${fila.resultado_ia}</span></td>
+                    <td>${fila.confianza}%</td>
+                    <td style="text-align: center;">
+                        <a href="/ver-detalle?id=${fila.id}" class="action-btn btn-audio">
+                            🎧 Audio
+                        </a>
+                        <button onclick="generarPDF('${datosPDF}')" class="action-btn btn-pdf">
+                            📄 Reporte
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 3. LÓGICA DE FILTRADO (BUSCADOR)
+        const buscador = document.getElementById('buscador');
+        buscador.addEventListener('keyup', (e) => {
+            const termino = e.target.value.toLowerCase();
+            
+            // Filtramos el array original
+            const filtrados = pacientesData.filter(p => 
+                p.nombre.toLowerCase().includes(termino)
+            );
+            
+            renderTable(filtrados);
+        });
+
+        // 4. LÓGICA PARA GENERAR EL PDF
+        function generarPDF(datosString) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const datos = JSON.parse(decodeURIComponent(datosString));
+
+            // Configuración de Estilo
+            doc.setFont("helvetica");
+            
+            // --- ENCABEZADO ---
+            doc.setFillColor(0, 123, 255); // Azul primario
+            doc.rect(0, 0, 210, 30, 'F'); // Barra superior azul
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("Reporte de Análisis Cardíaco", 105, 20, null, null, "center");
+
+            // --- INFO DEL PACIENTE ---
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            doc.text(`Fecha del estudio: ${datos.fecha}`, 20, 50);
+            
+            doc.setDrawColor(200);
+            doc.line(20, 55, 190, 55); // Línea separadora
+
+            doc.setFontSize(12);
+            doc.text("DATOS DEL PACIENTE", 20, 65);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Nombre: ${datos.nombre}`, 20, 75);
+            doc.text(`Edad: ${datos.edad} años`, 20, 85);
+            doc.text(`ID Registro: #${datos.id}`, 120, 75);
+
+            // --- RESULTADOS ---
+            doc.setFont("helvetica", "normal");
+            doc.rect(20, 100, 170, 60); // Caja de resultados
+
+            doc.setFontSize(14);
+            doc.setFillColor(240, 240, 240);
+            doc.rect(21, 101, 168, 10, 'F'); // Fondo gris título caja
+            doc.text("RESULTADOS DEL ANÁLISIS IA", 105, 108, null, null, "center");
+
+            doc.setFontSize(12);
+            doc.text("Diagnóstico Preliminar:", 30, 125);
+            
+            // Color del diagnóstico
+            if (datos.diagnostico.toLowerCase().includes('normal')) {
+                doc.setTextColor(40, 167, 69); // Verde
+            } else {
+                doc.setTextColor(220, 53, 69); // Rojo
+            }
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text(datos.diagnostico.toUpperCase(), 30, 135);
+
+            doc.setTextColor(0,0,0);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text("Nivel de Confianza del Modelo:", 120, 125);
+            doc.setFontSize(16);
+            doc.text(`${datos.confianza}%`, 120, 135);
+
+            // --- FOOTER / DISCLAIMER ---
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text("Nota: Este reporte ha sido generado automáticamente por un sistema de inteligencia artificial.", 105, 260, null, null, "center");
+            doc.text("No sustituye el criterio de un médico cardiólogo profesional.", 105, 265, null, null, "center");
+            doc.text("Hospital APP - Sistema de Telemedicina", 105, 280, null, null, "center");
+
+            // Guardar archivo
+            const nombreArchivo = `Reporte_${datos.nombre.replace(/\s+/g, '_')}_${datos.id}.pdf`;
+            doc.save(nombreArchivo);
+        }
+    </script>
+</body>
+</html>

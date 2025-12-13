@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Cardíaco</title>
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        :root {
+            --primary: #007bff;
+            --primary-hover: #0056b3;
+            --danger: #dc3545; 
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --input-border: #ddd;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* --- TARJETA PRINCIPAL --- */
+        .container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+            position: relative; 
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .icon-header {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        /* --- BOTONES SUPERIORES (LOGOUT & ADMIN) --- */
+        .top-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-top {
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-logout {
+            color: var(--danger);
+            border: 1px solid transparent;
+        }
+        .btn-logout:hover {
+            background-color: #fff5f5;
+            border-color: #ffcccc;
+        }
+
+        .btn-admin {
+            color: #555;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+        }
+        .btn-admin:hover {
+            background-color: #e2e6ea;
+            color: #333;
+        }
+
+        /* --- CAMPOS DE TEXTO --- */
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+            font-size: 0.95rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #333;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            box-sizing: border-box; 
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            outline: none;
+        }
+
+        /* --- INPUT DE ARCHIVO --- */
+        .file-input-wrapper {
+            margin-top: 30px;
+            margin-bottom: 25px;
+            border: 2px dashed #ccc;
+            padding: 30px;
+            border-radius: 10px;
+            background-color: #fafafa;
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+
+        .file-input-wrapper:hover {
+            border-color: var(--primary);
+            background-color: #f8fbff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        #file-name {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #555;
+            font-style: italic;
+            word-break: break-all;
+        }
+
+        /* --- BOTÓN DE ENVÍO --- */
+        .btn-upload {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-upload:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-upload:active {
+            transform: scale(0.98);
+        }
+
+        /* --- PANTALLA DE CARGA (LOADING) --- */
+        #loader-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        /* --- BOTÓN SECUNDARIO (HISTORIAL) --- */
+        .btn-secondary {
+            display: inline-block;
+            margin-top: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 2px;
+            transition: color 0.3s;
+        }
+        .btn-secondary:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Analizando Audio...</div>
+        <div class="loading-subtext" style="color:#666; margin-top:5px;">Esto puede tardar unos segundos</div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            
+            <div class="top-buttons">
+                <a href="/admin" class="btn-top btn-admin" title="Panel de Administración">
+                    ⚙️ Admin
+                </a>
+                
+                <a href="/logout" class="btn-top btn-logout" title="Cerrar Sesión">
+                    ⏻ Salir
+                </a>
+            </div>
+
+            <span class="icon-header">🩺</span>
+            <h1>Análisis Cardíaco AI</h1>
+            <p class="subtitle">Ingresa los datos del paciente y sube el archivo MP3 o WAV para diagnosticar.</p>
+
+            <form id="upload-form" action="/upload" method="POST" enctype="multipart/form-data">
+                
+                <div class="form-group">
+                    <label for="nombre" class="form-label">Nombre del Paciente</label>
+                    <input type="text" id="nombre" name="nombre" class="form-input" placeholder="Ej. Juan Pérez" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edad" class="form-label">Edad</label>
+                    <input type="number" id="edad" name="edad" class="form-input" placeholder="Ej. 45" min="0" max="120" required>
+                </div>
+
+                <div class="file-input-wrapper">
+                    <label for="file-upload" class="custom-file-upload">
+                        📂 Seleccionar Audio MP3 o WAV
+                    </label>
+                    <input id="file-upload" type="file" name="cancion" accept=".mp3, .wav" required>
+                    <div id="file-name">Ningún archivo seleccionado</div>
+                </div>
+
+                <button type="submit" class="btn-upload">Analizar y Guardar</button>
+            </form>
+            
+            <a href="/ver-pacientes" class="btn-secondary">
+                📄 Ver Historial de Pacientes
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-upload');
+        const fileNameDisplay = document.getElementById('file-name');
+        const form = document.getElementById('upload-form');
+        const loader = document.getElementById('loader-overlay');
+
+        // 1. Mostrar nombre del archivo al seleccionar
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                fileNameDisplay.textContent = "✅ " + this.files[0].name;
+                fileNameDisplay.style.color = "#28a745"; 
+                fileNameDisplay.style.fontWeight = "bold";
+            } else {
+                fileNameDisplay.textContent = "Ningún archivo seleccionado";
+                fileNameDisplay.style.color = "#555";
+                fileNameDisplay.style.fontWeight = "normal";
+            }
+        });
+
+        // 2. Mostrar animación de carga
+        form.addEventListener('submit', function(e) {
+            if (fileInput.files.length > 0 && form.checkValidity()) {
+                loader.style.display = 'flex';
+            }
+        });
+    </script>
+</body>
+</html>
