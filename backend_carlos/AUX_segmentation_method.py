@@ -478,7 +478,7 @@ def process_heart_sound(file_path, t0=0, t1=None, plot=False, filter_config=None
     s1_onsets, s1_offsets = find_peak_boundaries(s1_idxs, Env_hilbert)
     
     # chop into Cycles
-    cycles = segment_cycles(x_final, s1_onsets, fs)
+    cycles = segment_cycles(x_raw, s1_onsets, fs)
 
     #quality score
     score = 0
